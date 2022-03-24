@@ -26,10 +26,12 @@ impl Processor {
                 msg!("Instruction: Increment");
                 let accounts_iter = &mut accounts.iter();
                 let counter_ai = next_account_info(accounts_iter)?;
+                msg!("{:?}", *counter_ai.data.borrow_mut());
                 let mut counter = Counter::try_from_slice(&counter_ai.data.borrow())?;
                 counter.count += 1;
                 msg!("Updating count {}", counter.count);
                 counter.serialize(&mut *counter_ai.data.borrow_mut())?;
+                msg!("{:?}", *counter_ai.data.borrow_mut());
             }
         }
         Ok(())

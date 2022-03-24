@@ -78,6 +78,7 @@ const main = async () => {
 
   data = (await connection.getAccountInfo(counterKey)).data;
   count = new BN(data, "le");
+  console.log(counterKey);
   console.log("Counter Key:", counterKey.toBase58());
   console.log("Count: ", count.toNumber());
 };
