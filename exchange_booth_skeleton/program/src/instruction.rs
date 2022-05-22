@@ -8,12 +8,15 @@ pub enum ExchangeBoothInstruction {
     },
     Deposit {
         // TODO
+        deposit_amount: f64,
     },
     Withdraw {
         // TODO
+        withdrawal_amount: f64,
     },
     Exchange {
         // TODO
+        num_tokens_to_deposit: f64,
     },
     CloseExchangeBooth {
         // TODO

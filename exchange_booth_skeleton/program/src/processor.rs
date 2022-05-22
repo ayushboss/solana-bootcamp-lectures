@@ -28,17 +28,17 @@ impl Processor {
                 msg!("Instruction: InitializeExchangeBooth");
                 initialize_exchange_booth::process(program_id, accounts, tokenExchange1, tokenExchange2)?;
             }
-            ExchangeBoothInstruction::Deposit { } => {
+            ExchangeBoothInstruction::Deposit { deposit_amount } => {
                 msg!("Instruction: Deposit");
-                deposit::process(program_id, accounts)?;
+                deposit::process(program_id, accounts, deposit_amount)?;
             }
-            ExchangeBoothInstruction::Withdraw { } => {
+            ExchangeBoothInstruction::Withdraw { withdrawal_amount } => {
                 msg!("Instruction: Withdraw");
-                withdraw::process(program_id, accounts)?;
+                withdraw::process(program_id, accounts, withdrawal_amount)?;
             }
-            ExchangeBoothInstruction::Exchange { } => {
+            ExchangeBoothInstruction::Exchange { num_tokens_to_deposit } => {
                 msg!("Instruction: Withdraw");
-                exchange::process(program_id, accounts)?;
+                exchange::process(program_id, accounts, num_tokens_to_deposit)?;
             }
             ExchangeBoothInstruction::CloseExchangeBooth { } => {
                 msg!("Instruction: CloseExchangeBooth");

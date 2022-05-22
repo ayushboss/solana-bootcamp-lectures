@@ -1,5 +1,6 @@
 const {
-  TOKEN_PROGRAM_ID
+  TOKEN_PROGRAM_ID,
+  getAssociatedTokenAddress
 } = require("@solana/spl-token");
 
 const {
@@ -35,21 +36,25 @@ const main = async () => {
   const mint1 = new Keypair();
   const mint2 = new Keypair();
 
+  console.log("creating the mints");
+
   let mint1AccountCreateIx = SystemProgram.createAccount({
     fromPubkey: feePayer.publicKey,
     newAccountPubkey: mint1.publicKey,
-    lamports: await connection.getMinimumBalanceForRentExemption(100),
-    space: 100,
-    programId: programId
+    lamports: await connection.getMinimumBalanceForRentExemption(82),
+    space: 82,
+    programId: TOKEN_PROGRAM_ID
   })
 
   let mint2AccountCreateIx = SystemProgram.createAccount({
     fromPubkey: feePayer.publicKey,
     newAccountPubkey: mint2.publicKey,
-    lamports: await connection.getMinimumBalanceForRentExemption(100),
-    space: 100,
-    programId: programId
+    lamports: await connection.getMinimumBalanceForRentExemption(82),
+    space: 82,
+    programId: TOKEN_PROGRAM_ID
   })
+
+  console.log("created the mints");
 
   const user_ta_mint1 = new Keypair();
   const user_ta_mint2 = new Keypair();
@@ -58,20 +63,27 @@ const main = async () => {
     fromPubkey: feePayer.publicKey,
     newAccountPubkey: user_ta_mint1.publicKey,
     lamports: await connection.getMinimumBalanceForRentExemption(200),
-    space: 73,
-    programId: programId
+    space: 165,
+    programId: TOKEN_PROGRAM_ID
   });
 
   let userMint2AccountCreateIx = SystemProgram.createAccount({
     fromPubkey: feePayer.publicKey,
     newAccountPubkey: user_ta_mint2.publicKey,
     lamports: await connection.getMinimumBalanceForRentExemption(200),
-    space: 73,
-    programId: programId
+    space: 165,
+    programId: TOKEN_PROGRAM_ID
   });
 
   let accountCreationTransactions = new Transaction()
   accountCreationTransactions.add(mint1AccountCreateIx).add(mint2AccountCreateIx).add(userMint1AccountCreateIx).add(userMint2AccountCreateIx);
+
+  
+  let token_program_account = new Keypair(TOKEN_PROGRAM_ID)
+
+  console.log(token_program_account)
+
+  console.log("pre");
 
   let createTx = await sendAndConfirmTransaction(
     connection,
@@ -83,6 +95,8 @@ const main = async () => {
       commitment: "confirmed",
     }
   );
+
+  console.log("finished creation tx");
   
   const oracleAddressKey = (await PublicKey.findProgramAddress(
     [Buffer.from("oracle"), mint1.publicKey.toBuffer(), mint2.publicKey.toBuffer(), feePayer.publicKey.toBuffer()], programId
@@ -210,7 +224,8 @@ const main = async () => {
   
   const instruction_idx_2 = Buffer.from(new Uint8Array([1]));
   
-  let depositAmount = new Uint8Array(new Float64Array([1.43]).buffer)
+  let depositAmount = new Uint8Array(new Float64Array([0.75]).buffer)
+  // let depositAmount = new Uint32Array([0.5]);
 
   let deposit_ix = new TransactionInstruction({
     keys: [
@@ -238,6 +253,21 @@ const main = async () => {
         pubkey: vault1AddressKey,
         isSigner: false,
         isWritable: true,
+      },
+      {
+        pubkey: SYSVAR_RENT_PUBKEY,
+        isSigner: false,
+        isWritable: false,
+      },
+      {
+        pubkey: TOKEN_PROGRAM_ID,
+        isSigner: false,
+        isWritable: false,
+      },
+      {
+        pubkey: SystemProgram.programId,
+        isSigner: false,
+        isWritable: false,
       },
     ],
     
@@ -271,7 +301,7 @@ const main = async () => {
   console.log("\n\n-----------Transaction 3-------------");
   
   const instruction_idx_3 = Buffer.from(new Uint8Array([2]));
-  let withdrawalAmount = new Uint8Array(new Float64Array([1.43]).buffer)
+  let withdrawalAmount = new Uint8Array(new Float64Array([0.75]).buffer)
 
   let withdraw_ix = new TransactionInstruction({
     keys: [
@@ -300,9 +330,24 @@ const main = async () => {
         isSigner: false,
         isWritable: true,
       },
+      {
+        pubkey: SYSVAR_RENT_PUBKEY,
+        isSigner: false,
+        isWritable: false,
+      },
+      {
+        pubkey: TOKEN_PROGRAM_ID,
+        isSigner: false,
+        isWritable: false,
+      },
+      {
+        pubkey: SystemProgram.programId,
+        isSigner: false,
+        isWritable: false,
+      },
     ],
     
-    data: Buffer.concat([instruction_idx_3,  Buffer.from(withdrawalAmount)]),
+    data: Buffer.concat([instruction_idx_3, Buffer.from(withdrawalAmount)]),
     programId: programId,
   })
 
@@ -331,6 +376,7 @@ const main = async () => {
   console.log("\n\n-----------Transaction 4-------------");
   
   const instruction_idx_4 = Buffer.from(new Uint8Array([3]));
+  const exchangeAmount = new Uint8Array(new Float64Array([0.45]).buffer)
 
   let exchange_ix = new TransactionInstruction({
     keys: [
@@ -357,7 +403,7 @@ const main = async () => {
       {
         pubkey: vault1AddressKey,
         isSigner: false,
-        isWritable: true,
+        isWritable: true
       },
       {
         pubkey: vault2AddressKey,
@@ -365,34 +411,139 @@ const main = async () => {
         isWritable: true
       },
       {
+        pubkey: mint1.publicKey,
+        isSigner: false,
+        isWritable: false,
+      },
+      {
+        pubkey: mint2.publicKey,
+        isSigner: false,
+        isWritable: false,
+      },
+      {
+        pubkey: mint1.publicKey,
+        isSigner: false,
+        isWritable: false,
+      },
+      {
+        pubkey: mint2.publicKey,
+        isSigner: false,
+        isWritable: false,
+      },
+      {
         pubkey: oracleAddressKey,
         isSigner: false,
         isWritable: false,
-      }
+      },
+      {
+        pubkey: SYSVAR_RENT_PUBKEY,
+        isSigner: false,
+        isWritable: false,
+      },
+      {
+        pubkey: TOKEN_PROGRAM_ID,
+        isSigner: false,
+        isWritable: false,
+      },
+      {
+        pubkey: SystemProgram.programId,
+        isSigner: false,
+        isWritable: false,
+      },
     ],
     
-    data: Buffer.concat([instruction_idx_4,  Buffer.from(new Uint8Array(new BN(1).toArray("le", 8)))]),
+    data: Buffer.concat([instruction_idx_4,  Buffer.from(exchangeAmount)]),
     programId: programId,
   })
 
-  // let transaction3 = new Transaction();
-  // transaction3.add(withdraw_ix);
+  let transaction4 = new Transaction();
+  transaction4.add(exchange_ix);
 
-  // let txid3 = await sendAndConfirmTransaction(
-  //   connection,
-  //   transaction3,
-  //   [feePayer],
-  //   {
-  //     skipPreflight: true,
-  //     preflightCommitment: "confirmed",
-  //     commitment: "confirmed",
-  //   }
-  // );
+  let txid4 = await sendAndConfirmTransaction(
+    connection,
+    transaction4,
+    [feePayer],
+    {
+      skipPreflight: true,
+      preflightCommitment: "confirmed",
+      commitment: "confirmed",
+    }
+  );
 
-  // console.log(`https://explorer.solana.com/tx/${txid3}?cluster=devnet`);
-  // console.log("\n\n");
+  console.log(`https://explorer.solana.com/tx/${txid4}?cluster=devnet`);
+  
+  console.log("\n\n-----------Transaction 5-------------");
 
+  const instruction_idx_5 = Buffer.from(new Uint8Array([4]));
 
+  let close_ix = new TransactionInstruction({
+    keys: [
+      {
+        pubkey: exchangeBoothKey,
+        isSigner: false,
+        isWritable: true,
+      },
+      {
+        pubkey: feePayer.publicKey,
+        isSigner: true,
+        isWritable: true,
+      },
+      {
+        pubkey: vault1AddressKey,
+        isSigner: false,
+        isWritable: true
+      },
+      {
+        pubkey: vault2AddressKey,
+        isSigner: false,
+        isWritable: true
+      },
+      {
+        pubkey: mint1.publicKey,
+        isSigner: true,
+        isWritable: true,
+      },
+      {
+        pubkey: mint2.publicKey,
+        isSigner: true,
+        isWritable: true,
+      },
+      {
+        pubkey: SYSVAR_RENT_PUBKEY,
+        isSigner: false,
+        isWritable: false,
+      },
+      {
+        pubkey: TOKEN_PROGRAM_ID,
+        isSigner: false,
+        isWritable: false,
+      },
+      {
+        pubkey: SystemProgram.programId,
+        isSigner: false,
+        isWritable: false,
+      },
+    ],
+    
+    data: Buffer.concat([instruction_idx_5]),
+    programId: programId,
+  })
+
+  let transaction5 = new Transaction();
+  transaction5.add(close_ix);
+
+  let txid5 = await sendAndConfirmTransaction(
+    connection,
+    transaction5,
+    [feePayer, mint1, mint2],
+    {
+      skipPreflight: true,
+      preflightCommitment: "confirmed",
+      commitment: "confirmed",
+    }
+  );
+
+  console.log(`https://explorer.solana.com/tx/${txid5}?cluster=devnet`);  
 };
 
 main()
